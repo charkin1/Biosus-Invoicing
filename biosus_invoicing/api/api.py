@@ -1,10 +1,13 @@
 import frappe
 from frappe.utils import get_url_to_form
+from frappe import _
 
 def notify_po_creator(doc, event):
     """
-    Sends a notification to the PO creator whenever a Purchase Receipt is submitted.
-    Flags missing or damaged items if detected, otherwise sends a confirmation.
+    Notify the PO creator whenever a Purchase Receipt is submitted.
+    - Always send a message (issues or confirmation).
+    - If no email available for PO owner, do not block submission:
+      warn the submitting user instead.
     """
 
     if not doc.custom_purchase_order:
@@ -20,12 +23,12 @@ def notify_po_creator(doc, event):
     # Map PR items by item_code
     pr_map = {item.item_code: item for item in doc.items}
 
-    # 1. Damaged items (rejected_qty field exists on Purchase Receipt Item)
+    # 1. Damaged items
     for pr_item in doc.items:
         if pr_item.rejected_qty and pr_item.rejected_qty > 0:
             issues.append(f"{pr_item.item_code}: {pr_item.rejected_qty} rejected (damaged)")
 
-    # 2. Missing/partial items (compare against PO)
+    # 2. Missing/partial items
     for po_item in po.items:
         pr_item = pr_map.get(po_item.item_code)
         if not pr_item:
@@ -41,7 +44,7 @@ def notify_po_creator(doc, event):
                     f"(ordered {po_item.qty}, received {received})"
                 )
 
-    # 3. Message body
+    # 3. Build email message body
     if issues:
         issues_html = "".join([f"<li>{i}</li>" for i in issues])
         msg = f"""
@@ -59,14 +62,41 @@ def notify_po_creator(doc, event):
         <p><b>All items received in full and in good condition ✔</b></p>
         """
 
-    frappe.sendmail(
-        recipients=[po.owner],
-        subject=f"Purchase Receipt {doc.name} for PO {po.name}",
-        message=msg
-    )
+    # 4. Handle recipient email
+    recipient_email = None
+    try:
+        po_owner_user = frappe.get_doc("User", po.owner)
+        if po_owner_user.email:
+            recipient_email = po_owner_user.email
+    except Exception:
+        pass
+
+    if recipient_email:
+        # send the email normally
+        frappe.sendmail(
+            recipients=[recipient_email],
+            subject=f"Purchase Receipt {doc.name} for PO {po.name}",
+            message=msg
+        )
+    else:
+        # No email for PO owner → warn the user, but do not block submission
+        frappe.msgprint(
+            msg=_("No email associated with PO owner <b>{0}</b>. "
+                  "Purchase Receipt recorded, but PO owner has not been notified."
+                  ).format(po.owner),
+            title=_("Notification Skipped"),
+            indicator="orange"
+        )
 
 def set_purchase_order_field(doc, event):
+    """
+    Ensure the custom_purchase_order field at PR header is filled
+    from child items (if not already set).
+    """
     if not doc.custom_purchase_order and doc.items:
-        first_po = next((i.custom_purchase_order for i in doc.items if i.custom_purchase_order), None)
+        first_po = next(
+            (i.custom_purchase_order for i in doc.items if i.custom_purchase_order),
+            None
+        )
         if first_po:
             doc.custom_purchase_order = first_po
