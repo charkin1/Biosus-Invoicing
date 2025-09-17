@@ -6,6 +6,7 @@ def notify_po_creator(doc, event):
     """
     Notify the PO creator whenever a Purchase Receipt is submitted.
     - Always send a message (issues or confirmation).
+    - Attach the Purchase Order PDF.
     - If no email available for PO owner, do not block submission:
       warn the submitting user instead.
     """
@@ -72,11 +73,20 @@ def notify_po_creator(doc, event):
         pass
 
     if recipient_email:
-        # send the email normally
+        # Generate PDF attachment for Purchase Order
+        attachment = frappe.attach_print(
+            doctype="Purchase Order",
+            name=po.name,
+            file_name=f"PurchaseOrder-{po.name}.pdf",
+            print_format=None  # use default print format
+        )
+
+        # Send the email with attachment
         frappe.sendmail(
             recipients=[recipient_email],
             subject=f"Purchase Receipt {doc.name} for PO {po.name}",
-            message=msg
+            message=msg,
+            attachments=[attachment]
         )
     else:
         # No email for PO owner → warn the user, but do not block submission
