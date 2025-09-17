@@ -143,6 +143,7 @@ from .api import quotation_utils
 
 doc_events = {
     "Purchase Receipt": {
+        "before_save": "biosus_invoicing.api.api.set_purchase_order_field",
   		"on_submit": "biosus_invoicing.api.api.notify_po_creator"
   	}
 }

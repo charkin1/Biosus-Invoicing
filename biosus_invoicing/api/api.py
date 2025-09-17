@@ -64,3 +64,9 @@ def notify_po_creator(doc, event):
         subject=f"Purchase Receipt {doc.name} for PO {po.name}",
         message=msg
     )
+
+def set_purchase_order_field(doc, event):
+    if not doc.purchase_order and doc.items:
+        first_po = next((i.purchase_order for i in doc.items if i.purchase_order), None)
+        if first_po:
+            doc.purchase_order = first_po
