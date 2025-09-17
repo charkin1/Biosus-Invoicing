@@ -142,7 +142,7 @@ from .api import quotation_utils
 # Hook on document methods and events
 
 doc_events = {
-    "Delivery Note": {
+    "Purchase Receipt": {
   		"on_submit": "biosus_invoicing.api.api.notify_po_creator"
   	}
 }

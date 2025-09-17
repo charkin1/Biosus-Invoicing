@@ -1,11 +1,10 @@
-
 import frappe
 from frappe.utils import get_url_to_form
 
 def notify_po_creator(doc, event):
     """
-    Sends a notification to the PO creator whenever a Delivery Note is submitted.
-    Includes links to the DN and PO, and flags issues if detected.
+    Sends a notification to the PO creator whenever a Purchase Receipt is submitted.
+    Flags missing or damaged items if detected, otherwise sends a confirmation.
     """
 
     if not doc.purchase_order:
@@ -14,55 +13,54 @@ def notify_po_creator(doc, event):
     po = frappe.get_doc("Purchase Order", doc.purchase_order)
     issues = []
 
-    # Generate URLs to PO and DN forms
+    # Generate URLs
     po_url = get_url_to_form("Purchase Order", po.name)
-    dn_url = get_url_to_form("Delivery Note", doc.name)
+    pr_url = get_url_to_form("Purchase Receipt", doc.name)
 
-    # Map DN items by item_code for quick lookup
-    dn_map = {item.item_code: item for item in doc.items}
+    # Map PR items by item_code
+    pr_map = {item.item_code: item for item in doc.items}
 
-    # 1. Damaged check (rejected_qty)
-    for dn_item in doc.items:
-        if dn_item.rejected_qty and dn_item.rejected_qty > 0:
-            issues.append(f"{dn_item.item_code}: {dn_item.rejected_qty} damaged")
+    # 1. Damaged items (rejected_qty field exists on Purchase Receipt Item)
+    for pr_item in doc.items:
+        if pr_item.rejected_qty and pr_item.rejected_qty > 0:
+            issues.append(f"{pr_item.item_code}: {pr_item.rejected_qty} rejected (damaged)")
 
-    # 2. Missing or partial items vs PO
+    # 2. Missing/partial items (compare against PO)
     for po_item in po.items:
-        dn_item = dn_map.get(po_item.item_code)
-        if not dn_item:
+        pr_item = pr_map.get(po_item.item_code)
+        if not pr_item:
             issues.append(
                 f"{po_item.item_code}: missing completely (ordered {po_item.qty})"
             )
         else:
-            delivered = (dn_item.qty or 0) + (dn_item.rejected_qty or 0)
-            if delivered < po_item.qty:
-                missing = po_item.qty - delivered
+            received = (pr_item.qty or 0) + (pr_item.rejected_qty or 0)
+            if received < po_item.qty:
+                missing = po_item.qty - received
                 issues.append(
                     f"{po_item.item_code}: {missing} missing "
-                    f"(ordered {po_item.qty}, delivered {delivered})"
+                    f"(ordered {po_item.qty}, received {received})"
                 )
 
-    # 3. Compose message
+    # 3. Message body
     if issues:
         issues_html = "".join([f"<li>{i}</li>" for i in issues])
         msg = f"""
-        <p>Delivery Note <a href="{dn_url}"><b>{doc.name}</b></a> has been submitted against 
-        Purchase Order <a href="{po_url}"><b>{po.name}</b></a>.</p>
+        <p>Purchase Receipt <a href="{pr_url}"><b>{doc.name}</b></a> 
+        was submitted against Purchase Order <a href="{po_url}"><b>{po.name}</b>.</p>
 
         <p><b>Issues detected:</b></p>
         <ul>{issues_html}</ul>
         """
     else:
         msg = f"""
-        <p>Delivery Note <a href="{dn_url}"><b>{doc.name}</b></a> has been submitted against 
-        Purchase Order <a href="{po_url}"><b>{po.name}</b></a>.</p>
+        <p>Purchase Receipt <a href="{pr_url}"><b>{doc.name}</b></a> 
+        was submitted against Purchase Order <a href="{po_url}"><b>{po.name}</b>.</p>
 
-        <p><b>All items delivered in full and in good condition ✔</b></p>
+        <p><b>All items received in full and in good condition ✔</b></p>
         """
 
-    # 4. Send the email
     frappe.sendmail(
         recipients=[po.owner],
-        subject=f"Delivery Note {doc.name} for PO {po.name}",
+        subject=f"Purchase Receipt {doc.name} for PO {po.name}",
         message=msg
     )
