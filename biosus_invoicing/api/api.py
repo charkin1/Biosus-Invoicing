@@ -7,10 +7,10 @@ def notify_po_creator(doc, event):
     Flags missing or damaged items if detected, otherwise sends a confirmation.
     """
 
-    if not doc.purchase_order:
+    if not doc.custom_purchase_order:
         return
 
-    po = frappe.get_doc("Purchase Order", doc.purchase_order)
+    po = frappe.get_doc("Purchase Order", doc.custom_purchase_order)
     issues = []
 
     # Generate URLs
@@ -66,7 +66,7 @@ def notify_po_creator(doc, event):
     )
 
 def set_purchase_order_field(doc, event):
-    if not doc.purchase_order and doc.items:
-        first_po = next((i.purchase_order for i in doc.items if i.purchase_order), None)
+    if not doc.custom_purchase_order and doc.items:
+        first_po = next((i.custom_purchase_order for i in doc.items if i.custom_purchase_order), None)
         if first_po:
-            doc.purchase_order = first_po
+            doc.custom_purchase_order = first_po
