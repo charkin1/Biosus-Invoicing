@@ -29,7 +29,7 @@ from .api import quotation_utils
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/biosus/grid_layout_override.css"
+app_include_css = "/assets/biosus_invoicing/grid_layout_override.css"
 
 #app_include_js = "/assets/biosus_invoicing/js/project_invoice.js"
 
