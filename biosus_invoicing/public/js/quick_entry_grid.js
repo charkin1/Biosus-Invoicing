@@ -1,68 +1,64 @@
 // your_custom_app/public/js/quick_entry_grid.js
 
-var setup_quick_entry_grid = function(frm) {
-    console.log("[METADATA SCRIPT] Attempting to enforce layout...");
+// This function uses jQuery to directly manipulate the grid's HTML.
+// It's a "brute force" method to override everything else.
+var force_layout_with_jquery = function(frm) {
+    console.log("[JQUERY SCRIPT] Forcing layout via direct DOM manipulation...");
 
-    const grid = frm.get_field('items').grid;
-    if (!grid) {
-        return; // Grid controller not ready
+    const grid_wrapper = $(frm.get_field('items').wrapper);
+    if (grid_wrapper.length === 0) {
+        console.log("[JQUERY SCRIPT] Grid wrapper not found. Aborting.");
+        return;
     }
 
     // --- 1. THE DEFINITIVE LIST OF COLUMNS WE WANT TO SEE ---
     const visible_columns = {
-        'description': '400',
-        'qty':         '100',
-        'rate':        '120',
-        'amount':      '120'
+        'description': '400px', // Note: adding 'px' for CSS
+        'qty':         '100px',
+        'rate':        '120px',
+        'amount':      '120px'
     };
 
-    // --- 2. THE ROBUST SOLUTION: GET FIELDS FROM METADATA ---
-    // Get the name of the child doctype (e.g., "Purchase Order Item")
-    const child_doctype = frm.fields_dict.items.df.options;
-    // Get all field definitions for that doctype directly from the metadata cache
-    const all_docfields = frappe.meta.get_docfields(child_doctype);
-    // Extract just the fieldnames into a simple array
-    const all_fieldnames = all_docfields.map(df => df.fieldname);
+    // --- 2. HIDE ALL COLUMNS FIRST ---
+    // Hide all header cells and data cells in the grid.
+    grid_wrapper.find('.grid-heading-row .grid-header-cell').hide();
+    grid_wrapper.find('.grid-row .grid-cell').hide();
+    console.log("[JQUERY SCRIPT] All columns hidden.");
 
-    console.log(`[METADATA SCRIPT] Enforcing layout for ${child_doctype}. Visible fields will be:`, Object.keys(visible_columns));
+    // --- 3. SHOW ONLY THE COLUMNS WE WANT AND SET THEIR WIDTHS ---
+    for (const fieldname in visible_columns) {
+        const width = visible_columns[fieldname];
 
-    // --- 3. LOOP THROUGH EVERY FIELD AND FORCE VISIBILITY ---
-    all_fieldnames.forEach(fieldname => {
-        // Is this field in our list of columns to show?
-        if (fieldname in visible_columns) {
-            // YES: Make it visible and set its width.
-            grid.update_docfield_property(fieldname, 'hidden', 0);
-            grid.update_docfield_property(fieldname, 'in_list_view', 1);
-            grid.update_docfield_property(fieldname, 'width', visible_columns[fieldname]);
-        } else {
-            // NO: Hide it. No exceptions.
-            grid.update_docfield_property(fieldname, 'hidden', 1);
-        }
-    });
+        // Find the header for this fieldname and show it
+        const header_cell = grid_wrapper.find(`.grid-heading-row .grid-header-cell[data-fieldname="${fieldname}"]`);
+        header_cell.show();
+        header_cell.css('width', width);
 
-    grid.refresh();
-    console.log("[METADATA SCRIPT] Layout enforced.");
+        // Find all data cells for this fieldname and show them
+        const data_cells = grid_wrapper.find(`.grid-row .grid-cell[data-fieldname="${fieldname}"]`);
+        data_cells.show();
+    }
+    
+    console.log("[JQUERY SCRIPT] Whitelisted columns have been made visible and resized.");
 };
 
-// --- THIS PART IS ALREADY WORKING AND DOES NOT NEED TO CHANGE ---
-// It correctly attaches the function and handles the 'ONEOFF' logic.
+
+// --- THIS PART ATTACHES OUR FUNCTIONS ---
 const apply_quick_entry_logic = function(doctype) {
     frappe.ui.form.on(doctype, {
-        // items_on_form_rendered is more reliable than refresh for grids
-        items_on_form_rendered: function(frm) {
-            setup_quick_entry_grid(frm);
-        },
         refresh: function(frm) {
-            // Keep a short delay as a fallback
+            // Run our forceful script after a 1-second delay to ensure
+            // all of Frappe's own rendering scripts have finished.
             setTimeout(() => {
-                setup_quick_entry_grid(frm);
-            }, 200);
+                force_layout_with_jquery(frm);
+            }, 1000); // 1-second delay
         }
     });
 
+    // The ONEOFF logic is separate and should still work.
     frappe.ui.form.on(doctype + ' Item', {
         items_add: function(frm, cdt, cdn) {
-            console.log("[METADATA SCRIPT] Setting item_code to ONEOFF.");
+            console.log("[JQUERY SCRIPT] Setting item_code to ONEOFF.");
             frappe.model.set_value(cdt, cdn, 'item_code', 'ONEOFF');
         }
     });
