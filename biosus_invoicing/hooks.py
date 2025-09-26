@@ -6,7 +6,11 @@ app_email = "conall@biosusenergy.com"
 app_license = "mit"
 doctype_js = {
     "Project": "public/js/project.js",
+<<<<<<< HEAD
     "Quotation": "public/js/quotation_utils.js",
+=======
+    "Quotation": "public/js/quotation_utils.js"
+>>>>>>> parent of ce7871e (Quick entry of accounting docs)
 }
 # Apps
 # ------------------
