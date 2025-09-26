@@ -7,13 +7,7 @@ app_license = "mit"
 doctype_js = {
     "Project": "public/js/project.js",
     "Quotation": "public/js/quotation_utils.js",
-    "Sales Order": "public/js/quick_entry_grid.js",
-    "Purchase Order": "public/js/quick_entry_grid.js",
-    "Quotation": "public/js/quick_entry_grid.js",
-    "Sales Invoice": "public/js/quick_entry_grid.js",
-    "Purchase Invoice": "public/js/quick_entry_grid.js",
-    "Delivery Note": "public/js/quick_entry_grid.js",
-    "Purchase Receipt": "public/js/quick_entry_grid.js"
+   
 }
 # Apps
 # ------------------
