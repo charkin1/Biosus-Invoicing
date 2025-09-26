@@ -6,15 +6,8 @@ app_email = "conall@biosusenergy.com"
 app_license = "mit"
 doctype_js = {
     "Project": "public/js/project.js",
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "Quotation": "public/js/quotation_utils.js",
-=======
     "Quotation": "public/js/quotation_utils.js"
->>>>>>> parent of ce7871e (Quick entry of accounting docs)
-=======
-    "Quotation": "public/js/quotation_utils.js"
->>>>>>> parent of ce7871e (Quick entry of accounting docs)
+
 }
 # Apps
 # ------------------
@@ -37,7 +30,7 @@ from .api import quotation_utils
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/biosus_invoicing/grid_layout_override.css"
+#app_include_css = "/assets/biosus_invoicing/grid_layout_override.css"
 
 #app_include_js = "/assets/biosus_invoicing/js/project_invoice.js"
 
