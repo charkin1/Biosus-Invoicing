@@ -1,75 +1,97 @@
 // your_custom_app/public/js/quick_entry_grid.js
 
-// A reusable function to set up the quick entry grid
+/**
+ * A reusable function to configure an items table for "quick entry" mode.
+ * This function hides item-specific fields and shows description/accounting fields.
+ * It also automates setting the item_code to 'ONEOFF' for new rows.
+ * @param {object} frm - The form object from the frappe.ui.form.on trigger.
+ */
 var setup_quick_entry_grid = function(frm) {
-    // This is the fieldname of the child table in the parent DocType (e.g., 'items')
-    let child_table_fieldname = 'items';
+    const child_table_fieldname = 'items';
+    const grid = frm.get_field(child_table_fieldname).grid;
 
-    // --- 1. HIDE UNNECESSARY COLUMNS IN THE GRID ---
-    // This uses the official Frappe API to modify the grid's properties.
-    // It's better than trying to manipulate the DOM with jQuery directly.
-    let fields_to_hide = ['item_code', 'item_name', 'stock_uom', 'rate', 'amount'];
-    fields_to_hide.forEach(field => {
-        frm.get_field(child_table_fieldname).grid.update_docfield_property(field, 'hidden', 1);
+    // Wait until the grid is fully rendered before making changes.
+    if (!grid.grid_rows) {
+        return;
+    }
+
+    // --- 1. DEFINE WHICH COLUMNS TO SHOW AND HIDE ---
+    // These are the fields from your screenshot you want to see.
+    const fields_to_show = [
+        'description',
+        'qty',
+        'uom',
+        'expense_account', // Use 'income_account' for sales docs if needed
+        'item_tax_template',
+        'rate',
+        'amount'
+    ];
+
+    // These are the fields we want to remove from the view.
+    const fields_to_hide = [
+        'item_code',
+        'item_name'
+        // Add any other fields you want to hide, e.g., 'stock_uom'
+    ];
+
+    // --- 2. APPLY THE COLUMN VISIBILITY ---
+    // This is the modern, recommended API for controlling grid columns.
+    fields_to_show.forEach(field => {
+        grid.update_docfield_property(field, 'hidden', 0); // 0 means not hidden
+        grid.update_docfield_property(field, 'in_list_view', 1);
     });
 
-    // You can also make other columns wider to fill the space
-    frm.get_field(child_table_fieldname).grid.update_docfield_property('description', 'width', '400');
+    fields_to_hide.forEach(field => {
+        grid.update_docfield_property(field, 'hidden', 1); // 1 means hidden
+    });
+    
+    // Optional: Adjust column widths for a better layout
+    grid.update_docfield_property('description', 'width', '300');
 
 
-    // --- 2. AUTOMATE DATA ENTRY WHEN A NEW ROW IS ADDED ---
-    // This is the magic that makes it "quick entry".
-    // When a user clicks "Add Row", this code will run.
+    // --- 3. AUTOMATE DATA ENTRY (Your existing logic, improved) ---
+    // This event fires whenever a user clicks "Add Row".
     frm.cscript.on(child_table_fieldname + '_add', function(doc, cdt, cdn) {
-        let row = locals[cdt][cdn];
-        
-        // Automatically set the Item Code to 'ONEOFF' in the background.
-        // This is crucial because the field is still required by the backend,
-        // even if it's hidden from the user.
+        // Use frappe.model.set_value - it's the standard way to set data
+        // and trigger any dependent field calculations.
         frappe.model.set_value(cdt, cdn, 'item_code', 'ONEOFF');
-
-        // You can set other default values here if needed
-        // For example, set a default rate of 1 so the user only enters the total amount.
-        frappe.model.set_value(cdt, cdn, 'rate', 1);
+        // Setting item_code usually triggers item_name, uom, etc. to be fetched automatically.
         
         // Optional: Set focus to the description field for fast typing
         setTimeout(() => {
-            const grid = frm.get_field(child_table_fieldname).grid;
-            const rowIndex = grid.get_row_index(cdn);
-            grid.grid_rows[rowIndex-1].activate_field('description');
-        }, 100);
+            const row = grid.get_row(cdn);
+            if (row) {
+                row.toggle_view(true, () => row.activate_field('description'));
+            }
+        }, 300); // A small delay ensures the row is ready.
     });
 
-    // Refresh the grid to apply the changes
-    frm.get_field(child_table_fieldname).grid.refresh();
+    // Refresh the grid to make sure all changes are visible
+    grid.refresh();
 };
 
 
-// --- 3. ATTACH THE FUNCTION TO THE PARENT DOCTYPE ---
-// We hook into the 'refresh' trigger of the main form.
-// This ensures our customizations are applied whenever the form loads or is refreshed.
-frappe.ui.form.on('Sales Order', {
-    refresh: function(frm) {
-        setup_quick_entry_grid(frm);
-    }
-});
+// --- 4. ATTACH THE GLOBAL FUNCTION TO ALL RELEVANT DOCTYPES ---
+// This clean loop makes the script easy to manage and extend.
+const target_doctypes = [
+    'Purchase Order',
+    'Quotation',
+    'Sales Order',
+    'Sales Invoice',
+    'Purchase Invoice',
+    'Delivery Note',
+    'Purchase Receipt'
+];
 
-frappe.ui.form.on('Purchase Order', {
-    refresh: function(frm) {
-        setup_quick_entry_grid(frm);
-    }
+target_doctypes.forEach(doctype => {
+    frappe.ui.form.on(doctype, {
+        // 'refresh' is a reliable trigger that runs when the form loads or is re-rendered.
+        refresh: function(frm) {
+            setup_quick_entry_grid(frm);
+        },
+        // We can also re-apply it if the items table is refreshed for any other reason
+        items_on_form_rendered: function(frm) {
+            setup_quick_entry_grid(frm);
+        }
+    });
 });
-
-frappe.ui.form.on('Quotation', {
-    refresh: function(frm) {
-        setup_quick_entry_grid(frm);
-    }
-});
-
-frappe.ui.form.on('Sales Invoice', {
-    refresh: function(frm) {
-        setup_quick_entry_grid(frm);
-    }
-});
-
-// ... Add more for Purchase Invoice, Delivery Note, etc.
