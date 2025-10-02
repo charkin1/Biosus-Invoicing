@@ -149,7 +149,7 @@ doc_events = {
   		"on_submit": "biosus_invoicing.api.api.notify_po_creator"
   	}
 }
-boot_session = "biosus_invoicing.api.api.override_email_reply_to"
+
 
 # Scheduled Tasks
 # ---------------
