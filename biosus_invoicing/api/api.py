@@ -112,20 +112,24 @@ def set_purchase_order_field(doc, event):
         if first_po:
             doc.custom_purchase_order = first_po
 
+# biosus_invoicing/api/api.py
+import frappe
+from email.utils import formataddr
+
 def set_reply_to(doc, method):
-    user_email = frappe.db.get_value("User", frappe.session.user, "email")
+    # Skip if no user session
+    if not frappe.session or not frappe.session.user:
+        return
     
-    if user_email:
-        # Parse existing headers or create new
-        headers = {}
-        if doc.headers:
-            try:
-                headers = json.loads(doc.headers)
-            except:
-                headers = {}
-        
-        # Add Reply-To header
-        headers["Reply-To"] = user_email
-        
-        # Save back as JSON string
-        doc.headers = json.dumps(headers)
+    # Skip for system users
+    if frappe.session.user in ["Administrator", "Guest"]:
+        return
+    
+    user = frappe.get_doc("User", frappe.session.user)
+    
+    if user.email:
+        # Add Reply-To header directly to the message
+        if doc.message and "Reply-To:" not in doc.message:
+            # Insert Reply-To header at the beginning of the message
+            reply_to_header = f"Reply-To: {user.email}\n"
+            doc.message = reply_to_header + doc.message
