@@ -149,7 +149,7 @@ doc_events = {
   		"on_submit": "biosus_invoicing.api.api.notify_po_creator"
   	},
     "Email Queue": {
-    "before_insert": "your_app_name.utils.set_reply_to"
+    "before_insert": "biosus_invoicing.api.api.set_reply_to"
     }
 }
 
