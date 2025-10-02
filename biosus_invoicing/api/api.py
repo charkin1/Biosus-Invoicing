@@ -110,3 +110,9 @@ def set_purchase_order_field(doc, event):
         )
         if first_po:
             doc.custom_purchase_order = first_po
+
+def set_reply_to(doc, method):
+    import frappe
+    user_email = frappe.db.get_value("User", frappe.session.user, "email")
+    if user_email and not doc.reply_to:
+        doc.reply_to = user_email
