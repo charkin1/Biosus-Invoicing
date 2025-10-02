@@ -147,11 +147,9 @@ doc_events = {
     "Purchase Receipt": {
         "before_save": "biosus_invoicing.api.api.set_purchase_order_field",
   		"on_submit": "biosus_invoicing.api.api.notify_po_creator"
-  	},
-    "Email Queue": {
-    "before_insert": "biosus_invoicing.api.api.set_reply_to"
-    }
+  	}
 }
+boot_session = "biosus_invoicing.api.api.override_email_reply_to"
 
 # Scheduled Tasks
 # ---------------
