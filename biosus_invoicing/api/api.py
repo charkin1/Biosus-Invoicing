@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import get_url_to_form
 from frappe import _
+import json
 
 def notify_po_creator(doc, event):
     """
@@ -112,7 +113,19 @@ def set_purchase_order_field(doc, event):
             doc.custom_purchase_order = first_po
 
 def set_reply_to(doc, method):
-    import frappe
     user_email = frappe.db.get_value("User", frappe.session.user, "email")
-    if user_email and not doc.reply_to:
-        doc.reply_to = user_email
+    
+    if user_email:
+        # Parse existing headers or create new
+        headers = {}
+        if doc.headers:
+            try:
+                headers = json.loads(doc.headers)
+            except:
+                headers = {}
+        
+        # Add Reply-To header
+        headers["Reply-To"] = user_email
+        
+        # Save back as JSON string
+        doc.headers = json.dumps(headers)
