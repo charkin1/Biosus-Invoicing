@@ -116,20 +116,25 @@ def set_purchase_order_field(doc, event):
 import frappe
 from email.utils import formataddr
 
-def set_reply_to(doc, method):
-    # Skip if no user session
-    if not frappe.session or not frappe.session.user:
-        return
+def set_reply_to():
+    """Call this on app startup to monkey patch email sending"""
+    from frappe.email.email_body import EmailBody
     
-    # Skip for system users
-    if frappe.session.user in ["Administrator", "Guest"]:
-        return
+    # Store original method
+    original_get_message = EmailBody.get_message
     
-    user = frappe.get_doc("User", frappe.session.user)
+    def patched_get_message(self):
+        # Call original method
+        email = original_get_message(self)
+        
+        # Add Reply-To header if we have a user session
+        if frappe.session and frappe.session.user:
+            user_email = frappe.db.get_value("User", frappe.session.user, "email")
+            if user_email and user_email != "Administrator":
+                email["Reply-To"] = user_email
+        
+        return email
     
-    if user.email:
-        # Add Reply-To header directly to the message
-        if doc.message and "Reply-To:" not in doc.message:
-            # Insert Reply-To header at the beginning of the message
-            reply_to_header = f"Reply-To: {user.email}\n"
-            doc.message = reply_to_header + doc.message
+    # Replace method
+    EmailBody.get_message = patched_get_message
+
