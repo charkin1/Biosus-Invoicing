@@ -80,7 +80,7 @@
    "reqd": 1
   },
   {
-   "default": "Ecogenesis - Wood Store",
+   "default": "Wood Store - EGL",
    "fieldname": "warehouse",
    "fieldtype": "Link",
    "label": "Warehouse",
