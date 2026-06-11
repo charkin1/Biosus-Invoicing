@@ -2,18 +2,21 @@ import frappe
 from frappe.model.document import Document
 
 
-class WoodDeliveryNote(Document):
+class WoodSalesNote(Document):
     def validate(self):
         """Validation before save."""
         if not self.warehouse:
             self.warehouse = "Wood Store - EGL"
 
+        if not self.supplier:
+            self.supplier = "ECOGENESIS"
+
     def on_submit(self):
-        """Create stock entry when delivery note is submitted."""
+        """Create stock entry when sales note is submitted."""
         self.create_stock_entry()
 
     def on_cancel(self):
-        """Cancel linked stock entry when delivery note is cancelled."""
+        """Cancel linked stock entry when sales note is cancelled."""
         self.cancel_stock_entry()
 
     def create_stock_entry(self):
@@ -21,7 +24,7 @@ class WoodDeliveryNote(Document):
             "LOGS": "WOOD-LOGS",
             "CHIP LOGS": "WOOD-CHIP-LOGS",
 
-            # Legacy values retained so old amended documents do not break.
+            # Legacy fallbacks in case old values are ever copied/amended in.
             "Standard Wood": "WOOD-STD",
             "Waste Wood": "WOOD-WASTE",
             "FSC Certified": "WOOD-FSC",
@@ -36,17 +39,17 @@ class WoodDeliveryNote(Document):
 
         stock_entry = frappe.get_doc({
             "doctype": "Stock Entry",
-            "stock_entry_type": "Material Receipt",
+            "stock_entry_type": "Material Issue",
             "company": "Ecogenesis Ltd",
             "items": [{
                 "item_code": item_code,
                 "qty": self.net_weight_kg,
                 "uom": "Kg",
-                "t_warehouse": self.warehouse,
+                "s_warehouse": self.warehouse,
                 "basic_rate": 0,
             }],
             "remarks": (
-                f"Wood delivery from {self.supplier} "
+                f"Wood sale to {self.customer} "
                 f"- Ticket #{self.ticket_number}"
             ),
         })

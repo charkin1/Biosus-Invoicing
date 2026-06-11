@@ -2,16 +2,17 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
- "creation": "2024-01-16 10:00:00.000000",
+ "creation": "2026-06-01 00:00:00.000000",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "naming_series",
   "ticket_number",
-  "delivery_date",
-  "supplier",
+  "sale_date",
+  "customer",
   "column_break_1",
+  "supplier",
   "gross_weight_kg",
   "tare_weight_kg",
   "net_weight_kg",
@@ -24,7 +25,7 @@
   "section_break_2",
   "weighbridge_ticket",
   "column_break_2",
-  "reference_po",
+  "sales_invoice",
   "notes",
   "section_break_3",
   "stock_entry",
@@ -35,7 +36,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "WDN-.####",
+   "options": "WSN-.####",
    "reqd": 1
   },
   {
@@ -48,14 +49,28 @@
   },
   {
    "default": "Today",
-   "fieldname": "delivery_date",
+   "fieldname": "sale_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Delivery Date",
+   "label": "Sale Date",
    "reqd": 1
   },
   {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "ECOGENESIS",
    "fieldname": "supplier",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -63,10 +78,6 @@
    "label": "Supplier",
    "options": "Supplier",
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "gross_weight_kg",
@@ -144,10 +155,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "reference_po",
+   "allow_on_submit": 1,
+   "fieldname": "sales_invoice",
    "fieldtype": "Link",
-   "label": "Reference Purchase Order",
-   "options": "Purchase Order"
+   "label": "Sales Invoice",
+   "no_copy": 1,
+   "options": "Sales Invoice",
+   "read_only": 1
   },
   {
    "fieldname": "notes",
@@ -175,7 +189,7 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Wood Delivery Note",
+   "options": "Wood Sales Note",
    "print_hide": 1,
    "read_only": 1
   }
@@ -186,7 +200,7 @@
  "modified": "2026-06-01 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Biosus Invoicing",
- "name": "Wood Delivery Note",
+ "name": "Wood Sales Note",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
@@ -219,13 +233,32 @@
    "cancel": 1
   },
   {
+   "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Purchase User",
-   "share": 1
+   "role": "Sales User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1,
+   "amend": 1,
+   "cancel": 1
   }
  ],
  "sort_field": "modified",
